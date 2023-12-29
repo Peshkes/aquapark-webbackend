@@ -1,4 +1,4 @@
-package ru.kikopark.backend.persistence;
+package ru.kikopark.backend.persistence.authentication.entities;
 
 import jakarta.persistence.*;
 

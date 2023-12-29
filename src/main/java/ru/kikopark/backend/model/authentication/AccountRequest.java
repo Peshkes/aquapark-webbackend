@@ -1,4 +1,4 @@
-package ru.kikopark.backend.model;
+package ru.kikopark.backend.model.authentication;
 
 public class AccountRequest {
     private String name;
