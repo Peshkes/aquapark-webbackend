@@ -9,6 +9,8 @@ public class TicketRequest {
         this.count = count;
     }
 
+    public TicketRequest(){}
+
     public Integer getTicketId() {
         return ticketId;
     }
