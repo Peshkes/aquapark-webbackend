@@ -9,8 +9,7 @@ public class AccountResponse {
         this.roleName = roleName;
     }
 
-    public AccountResponse() {
-    }
+    public AccountResponse() {}
 
     public String getName() {
         return name;

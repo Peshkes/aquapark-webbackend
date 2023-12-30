@@ -6,16 +6,6 @@ public class AccountRequest {
     private String password;
     private int roleId;
 
-    public AccountRequest(String name, String email, String password, int roleId) {
-        this.name = name;
-        this.email = email;
-        this.password = password;
-        this.roleId = roleId;
-    }
-
-    public AccountRequest() {
-    }
-
     public String getName() {
         return name;
     }
