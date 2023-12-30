@@ -29,6 +29,8 @@ public class OrderEntity {
         this.dateChanged = null;
     }
 
+    public OrderEntity(){};
+
     public Integer getOrderId() {
         return orderId;
     }
