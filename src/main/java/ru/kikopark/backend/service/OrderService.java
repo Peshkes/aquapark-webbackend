@@ -6,25 +6,46 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpEntity;
 import org.springframework.stereotype.Service;
 import ru.kikopark.backend.model.order.OrderRequest;
+import ru.kikopark.backend.model.order.OrderStatus;
 import ru.kikopark.backend.model.order.TicketRequest;
+import ru.kikopark.backend.model.order.TicketsByOrderResponse;
 import ru.kikopark.backend.persistence.order.entities.OrderEntity;
 import ru.kikopark.backend.persistence.order.entities.OrderItemEntity;
 import ru.kikopark.backend.persistence.order.repositories.OrderItemsRepository;
-import ru.kikopark.backend.persistence.order.repositories.OrderRepository;
+import ru.kikopark.backend.persistence.order.repositories.OrdersRepository;
+import ru.kikopark.backend.persistence.order.repositories.StatusesRepository;
 import ru.kikopark.backend.utils.PrintService;
 
+import java.sql.Timestamp;
+import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 public class OrderService {
 
-    OrderRepository orderRepository;
+    OrdersRepository ordersRepository;
     OrderItemsRepository orderItemsRepository;
+    StatusesRepository statusesRepository;
 
     @Autowired
-    public OrderService(OrderRepository orderRepository, OrderItemsRepository orderItemsRepository) {
-        this.orderRepository = orderRepository;
+    public OrderService(OrdersRepository ordersRepository, OrderItemsRepository orderItemsRepository, StatusesRepository statusesRepository) {
+        this.ordersRepository = ordersRepository;
         this.orderItemsRepository = orderItemsRepository;
+        this.statusesRepository = statusesRepository;
+    }
+
+    public Optional<TicketsByOrderResponse> getTicketsByOrder(Integer id) {
+        Optional<OrderEntity> orderEntity = Optional.ofNullable(ordersRepository.getOrderEntityByOrderId(id));
+        if (orderEntity.isPresent()) {
+            List<OrderItemEntity> orderItemEntities = orderItemsRepository.getOrderItemEntitiesByOrderId(id);
+            List<TicketRequest> tickets = orderItemEntities.stream()
+                    .map(item -> new TicketRequest(item.getTicketId(), item.getCount()))
+                    .collect(Collectors.toList());
+
+            return Optional.of(new TicketsByOrderResponse(ordersRepository.getStatusNameById(id), tickets));
+        }
+        return Optional.empty();
     }
 
     public Optional<OrderEntity> addNewOrder(HttpEntity<String> order) {
@@ -32,7 +53,7 @@ public class OrderService {
         Optional<OrderRequest> orderRequest = jsonToOrder(order.getBody());
         if (orderRequest.isPresent()) {
             OrderEntity newOrder = orderEntityMapper(orderRequest.get());
-            OrderEntity returnedOrder = orderRepository.save(newOrder);
+            OrderEntity returnedOrder = ordersRepository.save(newOrder);
             addedOrder = Optional.of(returnedOrder);
             for (TicketRequest ticket : orderRequest.get().getTickets()) {
                 OrderItemEntity newOrderItem = orderItemEntityMapper(returnedOrder.getOrderId(), ticket);
@@ -47,7 +68,24 @@ public class OrderService {
         return addedOrder;
     }
 
-//    utils
+    public Optional<OrderEntity> updateOrderStatus(Integer id, HttpEntity<String> httpEntity) {
+        Optional<OrderEntity> updatedOrder = Optional.empty();
+        Optional<OrderEntity> oldOrder = Optional.ofNullable(ordersRepository.getOrderEntityByOrderId(id));
+        if (oldOrder.isEmpty()) {
+            return updatedOrder;
+        }
+        Optional<OrderStatus> orderStatusFromHttp = jsonToOrderStatus(httpEntity.getBody());
+        if (orderStatusFromHttp.isPresent()) {
+            OrderEntity orderToBeUpdated = oldOrder.get();
+            orderToBeUpdated.setStatusId(orderStatusFromHttp.get().getStatus());
+            orderToBeUpdated.setDateChanged(new Timestamp(System.currentTimeMillis()));
+            OrderEntity returnedOrder = ordersRepository.save(orderToBeUpdated);
+            updatedOrder = Optional.of(returnedOrder);
+        }
+        return updatedOrder;
+    }
+
+    //    utils
     private OrderEntity orderEntityMapper(OrderRequest orderRequest) {
         return new OrderEntity(orderRequest.getFullName(), orderRequest.getPrice());
     }
@@ -66,5 +104,17 @@ public class OrderService {
             e.printStackTrace();
         }
         return order;
+    }
+
+    private Optional<OrderStatus> jsonToOrderStatus(String json) {
+        ObjectMapper objectMapper = new ObjectMapper();
+        Optional<OrderStatus> orderStatus = Optional.empty();
+        try {
+            OrderStatus mappedOrderStatus = objectMapper.readValue(json, OrderStatus.class);
+            orderStatus = Optional.of(mappedOrderStatus);
+        } catch (JsonProcessingException e) {
+            e.printStackTrace();
+        }
+        return orderStatus;
     }
 }

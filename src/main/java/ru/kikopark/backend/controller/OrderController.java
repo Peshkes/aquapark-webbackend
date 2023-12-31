@@ -4,11 +4,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RestController;
-import ru.kikopark.backend.model.authentication.AccountResponse;
-import ru.kikopark.backend.persistence.authentication.entities.AccountEntity;
-import ru.kikopark.backend.persistence.authentication.entities.RoleEntity;
+import org.springframework.web.bind.annotation.*;
+import ru.kikopark.backend.model.order.TicketsByOrderResponse;
 import ru.kikopark.backend.persistence.order.entities.OrderEntity;
 import ru.kikopark.backend.service.OrderService;
 
@@ -23,13 +20,30 @@ public class OrderController {
         this.orderService = orderService;
     }
 
+    @GetMapping("/order")
+    public Optional<TicketsByOrderResponse> getTicketsByOrder(@RequestParam Integer id){
+        return orderService.getTicketsByOrder(id);
+    }
+
     @PostMapping("/create-order")
-    public ResponseEntity<Integer> addAccount(HttpEntity<String> httpEntity){
+    public ResponseEntity<Integer> addOrder(HttpEntity<String> httpEntity){
         Optional<OrderEntity> insertionSuccess = orderService.addNewOrder(httpEntity);
         Integer orderId = null;
         HttpStatus httpStatus = HttpStatus.CONFLICT;
         if (insertionSuccess.isPresent()){
             orderId = insertionSuccess.get().getOrderId();
+            httpStatus = HttpStatus.OK;
+        }
+        return new ResponseEntity<>(orderId, httpStatus);
+    }
+
+    @PutMapping("/update-order-status")
+    public ResponseEntity<Integer> updateOrderStatus(@RequestParam Integer id, HttpEntity<String> httpEntity){
+        Optional<OrderEntity> updateSuccess = orderService.updateOrderStatus(id, httpEntity);
+        Integer orderId = null;
+        HttpStatus httpStatus = HttpStatus.CONFLICT;
+        if (updateSuccess.isPresent()){
+            orderId = updateSuccess.get().getOrderId();
             httpStatus = HttpStatus.OK;
         }
         return new ResponseEntity<>(orderId, httpStatus);

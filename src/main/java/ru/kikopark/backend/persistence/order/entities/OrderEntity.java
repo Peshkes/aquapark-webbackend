@@ -29,7 +29,10 @@ public class OrderEntity {
         this.dateChanged = null;
     }
 
-    public OrderEntity(){};
+    public OrderEntity() {
+    }
+
+    ;
 
     public Integer getOrderId() {
         return orderId;
@@ -53,5 +56,13 @@ public class OrderEntity {
 
     public Timestamp getDateChanged() {
         return dateChanged;
+    }
+
+    public void setStatusId(Integer statusId) {
+        this.statusId = statusId;
+    }
+
+    public void setDateChanged(Timestamp dateChanged) {
+        this.dateChanged = dateChanged;
     }
 }
