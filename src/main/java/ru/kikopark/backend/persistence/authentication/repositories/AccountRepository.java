@@ -9,6 +9,7 @@ import ru.kikopark.backend.persistence.authentication.entities.AccountEntity;
 @Repository
 public interface AccountRepository extends JpaRepository<AccountEntity, Integer> {
     AccountEntity getAccountEntitiesByUserId(Integer id);
+    AccountEntity findAccountEntityByEmail(String email);
 
     @Query("SELECT new ru.kikopark.backend.model.authentication.AccountResponse(a.name, r.roleName) "
             + "FROM AccountEntity a INNER JOIN RoleEntity r ON a.roleId = r.roleId "

@@ -22,19 +22,12 @@ public class PrintService {
 
     public static void createTicket(String data) throws Exception {
         BufferedImage qrCodeImage = generateQRCodeImage(data);
-        // Загрузка существующего PDF-документа
         PDDocument document = PDDocument.load(new File("src/main/java/ru/kikopark/backend/utils/ticket.pdf"));
-        // Получение первой страницы документа (вы можете выбрать другую, если нужно)
         PDPage page = document.getPage(0);
-        // Получение контент-стрима для добавления содержимого
         PDPageContentStream contentStream = new PDPageContentStream(document, page, PDPageContentStream.AppendMode.APPEND, true);
-        // Вставка QR-кода на существующую страницу
         insertQrCode(document, contentStream, qrCodeImage, 130, 182, 245, 245);
-        // Закрытие потока контента
         contentStream.close();
-        // Сохранение изменений в существующем PDF-документе
         document.save("src/main/java/ru/kikopark/backend/utils/output_document" + data + ".pdf");
-        // Закрытие документа
         document.close();
     }
 

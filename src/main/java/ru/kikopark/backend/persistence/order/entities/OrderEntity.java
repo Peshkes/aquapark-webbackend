@@ -32,8 +32,6 @@ public class OrderEntity {
     public OrderEntity() {
     }
 
-    ;
-
     public Integer getOrderId() {
         return orderId;
     }
