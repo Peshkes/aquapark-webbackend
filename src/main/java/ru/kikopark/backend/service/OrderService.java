@@ -2,6 +2,7 @@ package ru.kikopark.backend.service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpEntity;
 import org.springframework.stereotype.Service;
@@ -47,7 +48,7 @@ public class OrderService {
         }
         return Optional.empty();
     }
-
+    @Transactional
     public Optional<OrderEntity> addNewOrder(HttpEntity<String> order) {
         Optional<OrderEntity> addedOrder = Optional.empty();
         Optional<OrderRequest> orderRequest = jsonToOrder(order.getBody());
@@ -67,7 +68,7 @@ public class OrderService {
         }
         return addedOrder;
     }
-
+    @Transactional
     public Optional<OrderEntity> updateOrderStatus(Integer id, HttpEntity<String> httpEntity) {
         Optional<OrderEntity> updatedOrder = Optional.empty();
         Optional<OrderEntity> oldOrder = Optional.ofNullable(ordersRepository.getOrderEntityByOrderId(id));

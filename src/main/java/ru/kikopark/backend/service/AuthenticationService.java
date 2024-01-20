@@ -11,7 +11,9 @@ import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
+import ru.kikopark.backend.configs.SecurityConfig;
 import ru.kikopark.backend.model.authentication.AccountRequest;
 import ru.kikopark.backend.model.authentication.AccountResponse;
 import ru.kikopark.backend.persistence.authentication.entities.AccountEntity;
@@ -26,8 +28,8 @@ import java.util.stream.Collectors;
 
 @Service
 public class AuthenticationService implements UserDetailsService {
-    AccountRepository accountRepository;
-    RoleRepository roleRepository;
+    private final AccountRepository accountRepository;
+    private final RoleRepository roleRepository;
     @Autowired
     public AuthenticationService(AccountRepository accountRepository, RoleRepository roleRepository) {
         this.accountRepository = accountRepository;
@@ -83,7 +85,12 @@ public class AuthenticationService implements UserDetailsService {
     }
 
     private AccountEntity accountEntityMapper(AccountRequest accountRequest) {
-        return new AccountEntity(accountRequest.getRoleId(), accountRequest.getName(), accountRequest.getPassword(), accountRequest.getEmail());
+        BCryptPasswordEncoder bCryptPasswordEncoder = SecurityConfig.passwordEncoder();
+        return new AccountEntity(
+                accountRequest.getRoleId(),
+                accountRequest.getName(),
+                bCryptPasswordEncoder.encode(accountRequest.getPassword()),
+                accountRequest.getEmail());
     }
 
     private UserDetails buildUserDetails(AccountEntity accountEntity) {
