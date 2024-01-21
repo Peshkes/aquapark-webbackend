@@ -4,6 +4,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -37,16 +38,11 @@ public class AuthenticationController {
         this.jwtService = jwtService;
     }
 
-    @GetMapping("/employee/accountbyid")
-    public AccountEntity getAccount(@RequestParam Integer id) {
-        return authenticationService.getAccountById(id);
-    }
 
-    @GetMapping("/guest/get-account")
+    @GetMapping("/employee/get-account")
     public AccountResponse getAccountEntityByEmailAndPassword(@RequestParam String email, @RequestParam String password) {
         return authenticationService.getAccountEntityByEmailAndPassword(email, password);
     }
-
 
     @PostMapping("/guest/create-account")
     public ResponseEntity<AccountResponse> addAccount(HttpEntity<String> httpEntity) {
@@ -70,11 +66,16 @@ public class AuthenticationController {
             UserDetails userDetails = authenticationService.loadUserByUsername(authenticationRequest.getUsername());
             if (userDetails != null && SecurityConfig.passwordEncoder().matches(authenticationRequest.getPassword(), userDetails.getPassword())) {
                 authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(authenticationRequest.getUsername(), authenticationRequest.getPassword()));
+
+                String accessToken = jwtService.generateAccessToken(userDetails);
+                String refreshToken = jwtService.generateRefreshToken(userDetails);
+
+                // Возвращаем оба токена в ответе
+                AuthenticationResponse authenticationResponse = new AuthenticationResponse(accessToken, refreshToken);
+                return ResponseEntity.ok(authenticationResponse);
             } else {
                 return new ResponseEntity<>(new AppError(HttpStatus.UNAUTHORIZED.value(), "Authentication failed"), HttpStatus.UNAUTHORIZED);
             }
-            String token = jwtService.generateToken(userDetails);
-            return ResponseEntity.ok(new AuthenticationResponse(token));
         } catch (AuthenticationException e) {
             return new ResponseEntity<>(new AppError(HttpStatus.UNAUTHORIZED.value(), "Authentication failed"), HttpStatus.UNAUTHORIZED);
         }

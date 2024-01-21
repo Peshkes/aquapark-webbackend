@@ -3,9 +3,12 @@ package ru.kikopark.backend.service;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.transaction.Transactional;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpEntity;
 import org.springframework.stereotype.Service;
+import ru.kikopark.backend.configs.JwtRequestFilter;
 import ru.kikopark.backend.model.order.OrderRequest;
 import ru.kikopark.backend.model.order.OrderStatus;
 import ru.kikopark.backend.model.order.TicketRequest;
@@ -43,11 +46,11 @@ public class OrderService {
             List<TicketRequest> tickets = orderItemEntities.stream()
                     .map(item -> new TicketRequest(item.getTicketId(), item.getCount()))
                     .collect(Collectors.toList());
-
             return Optional.of(new TicketsByOrderResponse(ordersRepository.getStatusNameById(id), tickets));
         }
         return Optional.empty();
     }
+
     @Transactional
     public Optional<OrderEntity> addNewOrder(HttpEntity<String> order) {
         Optional<OrderEntity> addedOrder = Optional.empty();
@@ -68,6 +71,7 @@ public class OrderService {
         }
         return addedOrder;
     }
+
     @Transactional
     public Optional<OrderEntity> updateOrderStatus(Integer id, HttpEntity<String> httpEntity) {
         Optional<OrderEntity> updatedOrder = Optional.empty();

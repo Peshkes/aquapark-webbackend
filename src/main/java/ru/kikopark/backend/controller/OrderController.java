@@ -20,9 +20,13 @@ public class OrderController {
     public OrderController(OrderService orderService) {
         this.orderService = orderService;
     }
-    @PreAuthorize("hasRole('admin')")
-    @GetMapping("/admin/order")
+    @GetMapping("/employee/order")
     public Optional<TicketsByOrderResponse> getTicketsByOrder(@RequestParam Integer id){
+        return orderService.getTicketsByOrder(id);
+    }
+
+    @GetMapping("/admin/order")
+    public Optional<TicketsByOrderResponse> getAdminTicketsByOrder(@RequestParam Integer id){
         return orderService.getTicketsByOrder(id);
     }
 
@@ -37,7 +41,7 @@ public class OrderController {
         }
         return new ResponseEntity<>(orderId, httpStatus);
     }
-    @PreAuthorize("hasRole('admin')")
+
     @PutMapping("/admin/update-order-status")
     public ResponseEntity<Integer> updateOrderStatus(@RequestParam Integer id, HttpEntity<String> httpEntity){
         Optional<OrderEntity> updateSuccess = orderService.updateOrderStatus(id, httpEntity);

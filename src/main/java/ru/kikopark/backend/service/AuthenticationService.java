@@ -36,10 +36,6 @@ public class AuthenticationService implements UserDetailsService {
         this.roleRepository = roleRepository;
     }
 
-    public AccountEntity getAccountById(Integer id) {
-        return accountRepository.getAccountEntitiesByUserId(id);
-    }
-
     public AccountResponse getAccountEntityByEmailAndPassword(String email, String password) {
         return accountRepository.getAccountEntityByEmailAndPassword(email, password);
     }
@@ -85,11 +81,10 @@ public class AuthenticationService implements UserDetailsService {
     }
 
     private AccountEntity accountEntityMapper(AccountRequest accountRequest) {
-        BCryptPasswordEncoder bCryptPasswordEncoder = SecurityConfig.passwordEncoder();
         return new AccountEntity(
                 accountRequest.getRoleId(),
                 accountRequest.getName(),
-                bCryptPasswordEncoder.encode(accountRequest.getPassword()),
+                SecurityConfig.passwordEncoder().encode(accountRequest.getPassword()),
                 accountRequest.getEmail());
     }
 

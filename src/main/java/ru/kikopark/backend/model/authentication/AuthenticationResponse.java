@@ -1,15 +1,22 @@
 package ru.kikopark.backend.model.authentication;
 
 public class AuthenticationResponse {
-    private String token;
+    private String accessToken;
+    private String refreshToken;
 
-    public AuthenticationResponse(String token) {
-        this.token = token;
+    public AuthenticationResponse() {
     }
 
-    public AuthenticationResponse(){}
+    public AuthenticationResponse(String accessToken, String refreshToken) {
+        this.accessToken = accessToken;
+        this.refreshToken = refreshToken;
+    }
 
-    public String getToken() {
-        return token;
+    public String getAccessToken() {
+        return accessToken;
+    }
+
+    public String getRefreshToken() {
+        return refreshToken;
     }
 }

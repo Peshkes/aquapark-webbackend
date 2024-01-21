@@ -12,6 +12,7 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.csrf.CsrfTokenRepository;
 import org.springframework.security.web.csrf.HttpSessionCsrfTokenRepository;
 import ru.kikopark.backend.service.AuthenticationService;
@@ -19,24 +20,25 @@ import ru.kikopark.backend.service.AuthenticationService;
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
-
+    private final JwtRequestFilter jwtRequestFilter;
     private final AuthenticationService authenticationService;
 
-    public SecurityConfig(AuthenticationService authenticationService) {
+    public SecurityConfig(AuthenticationService authenticationService, JwtRequestFilter jwtRequestFilter) {
         this.authenticationService = authenticationService;
+        this.jwtRequestFilter = jwtRequestFilter;
     }
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http.csrf(AbstractHttpConfigurer::disable);
-        http
-                .authorizeHttpRequests((authorizeHttpRequests) ->
-                        authorizeHttpRequests
-                                .requestMatchers("/employee/**").authenticated()
-                                .requestMatchers("/admin/**").hasRole("admin")
-                                .requestMatchers("/guest/**").permitAll()
-                                .anyRequest().permitAll()
-                );
+        http.authorizeHttpRequests((authorizeHttpRequests) ->
+                authorizeHttpRequests
+                        .requestMatchers("/employee/**").authenticated()
+                        .requestMatchers("/admin/**").hasAnyRole("admin")
+                        .requestMatchers("/guest/**").permitAll()
+                        .anyRequest().permitAll()
+        );
+        http.addFilterBefore(jwtRequestFilter, UsernamePasswordAuthenticationFilter.class);
         return http.build();
     }
 
