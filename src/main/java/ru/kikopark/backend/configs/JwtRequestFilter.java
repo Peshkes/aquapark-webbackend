@@ -5,8 +5,6 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -25,7 +23,6 @@ import java.util.stream.Collectors;
 public class JwtRequestFilter extends OncePerRequestFilter {
     private final JwtService jwtService;
     private final AuthenticationService authenticationService;
-    private static final Logger logger = LoggerFactory.getLogger(JwtRequestFilter.class);
     @Autowired
     public JwtRequestFilter(JwtService jwtService, AuthenticationService authenticationService) {
         this.jwtService = jwtService;
@@ -41,11 +38,11 @@ public class JwtRequestFilter extends OncePerRequestFilter {
             jwt = authHeader.substring(7);
             try {
                 username = jwtService.getUsername(jwt);username = jwtService.getUsername(jwt);
-                logger.info("Username extracted from JWT: {}", username);
+
                 List<String> roles = jwtService.getRoles(jwt);
-                logger.info("Roles extracted from JWT: {}", roles);
+
             } catch (ExpiredJwtException e) {
-                logger.error("JWT token is expired");
+
                 // Если access token истек, пробуем обновить его с помощью refresh token
                 String refreshToken = request.getHeader("Refresh-Token");
                 username = jwtService.getUsername(refreshToken);
@@ -58,11 +55,9 @@ public class JwtRequestFilter extends OncePerRequestFilter {
                         newAccessToken = jwtService.generateAccessToken(userDetails);
                         response.setHeader("Authorization", newAccessToken);
                     } catch (Exception exception) {
-                        logger.error("Cannot find that user");
                     }
                 }
             } catch (Exception e) {
-                logger.error("Unexpected exception during token processing", e);
             }
         }
         if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
@@ -74,7 +69,6 @@ public class JwtRequestFilter extends OncePerRequestFilter {
                             .map(SimpleGrantedAuthority::new)
                             .collect(Collectors.toList()));
             SecurityContextHolder.getContext().setAuthentication(token);
-            logger.info("Authentication token set for user: {}", username);
         }
         filterChain.doFilter(request, response);
     }
