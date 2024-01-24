@@ -4,14 +4,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.AuthenticationException;
-import org.springframework.security.core.userdetails.User;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 import ru.kikopark.backend.configs.SecurityConfig;
 import ru.kikopark.backend.exeptions.AppError;
@@ -24,6 +21,8 @@ import ru.kikopark.backend.service.AuthenticationService;
 import ru.kikopark.backend.utils.JwtService;
 
 import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @RestController
 public class AuthenticationController {
@@ -37,7 +36,6 @@ public class AuthenticationController {
         this.authenticationManager = authenticationManager;
         this.jwtService = jwtService;
     }
-
 
     @GetMapping("/employee/get-account")
     public AccountResponse getAccountEntityByEmailAndPassword(@RequestParam String email, @RequestParam String password) {
@@ -70,14 +68,17 @@ public class AuthenticationController {
                 String accessToken = jwtService.generateAccessToken(userDetails);
                 String refreshToken = jwtService.generateRefreshToken(userDetails);
 
-                // Возвращаем оба токена в ответе
-                AuthenticationResponse authenticationResponse = new AuthenticationResponse(accessToken, refreshToken);
+                String[] roles = userDetails.getAuthorities().stream()
+                        .map(GrantedAuthority::getAuthority).distinct().toArray(String[]::new);
+
+                AuthenticationResponse authenticationResponse = new AuthenticationResponse(accessToken, refreshToken, roles);
                 return ResponseEntity.ok(authenticationResponse);
             } else {
-                return new ResponseEntity<>(new AppError(HttpStatus.UNAUTHORIZED.value(), "Authentication failed"), HttpStatus.UNAUTHORIZED);
+                return new ResponseEntity<>(new AppError(HttpStatus.UNAUTHORIZED.value(), "Ошибка аутентификации"), HttpStatus.UNAUTHORIZED);
             }
         } catch (AuthenticationException e) {
-            return new ResponseEntity<>(new AppError(HttpStatus.UNAUTHORIZED.value(), "Authentication failed"), HttpStatus.UNAUTHORIZED);
+            return new ResponseEntity<>(new AppError(HttpStatus.UNAUTHORIZED.value(), "Ошибка аутентификации"), HttpStatus.UNAUTHORIZED);
         }
     }
+
 }
