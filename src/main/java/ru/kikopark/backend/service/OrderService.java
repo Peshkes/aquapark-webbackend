@@ -5,22 +5,19 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpEntity;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import ru.kikopark.backend.configs.JwtRequestFilter;
-import ru.kikopark.backend.model.order.OrderRequest;
-import ru.kikopark.backend.model.order.OrderStatus;
-import ru.kikopark.backend.model.order.TicketRequest;
-import ru.kikopark.backend.model.order.TicketsByOrderResponse;
-import ru.kikopark.backend.persistence.order.entities.OrderEntity;
-import ru.kikopark.backend.persistence.order.entities.OrderItemEntity;
-import ru.kikopark.backend.persistence.order.repositories.OrderItemsRepository;
-import ru.kikopark.backend.persistence.order.repositories.OrdersRepository;
-import ru.kikopark.backend.persistence.order.repositories.StatusesRepository;
+import ru.kikopark.backend.model.order.*;
+import ru.kikopark.backend.persistence.order.entities.*;
+import ru.kikopark.backend.persistence.order.repositories.*;
 import ru.kikopark.backend.utils.PrintService;
 
 import java.sql.Timestamp;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
 @Service
@@ -29,12 +26,18 @@ public class OrderService {
     OrdersRepository ordersRepository;
     OrderItemsRepository orderItemsRepository;
     StatusesRepository statusesRepository;
+    TicketsRepository ticketsRepository;
+    TypesRepository typesRepository;
+    TimeRepository timeRepository;
+    private static final Logger logger = Logger.getLogger(OrderService.class.getName());
 
-    @Autowired
-    public OrderService(OrdersRepository ordersRepository, OrderItemsRepository orderItemsRepository, StatusesRepository statusesRepository) {
+    public OrderService(OrdersRepository ordersRepository, OrderItemsRepository orderItemsRepository, StatusesRepository statusesRepository, TicketsRepository ticketsRepository, TypesRepository typesRepository, TimeRepository timeRepository) {
         this.ordersRepository = ordersRepository;
         this.orderItemsRepository = orderItemsRepository;
         this.statusesRepository = statusesRepository;
+        this.ticketsRepository = ticketsRepository;
+        this.typesRepository = typesRepository;
+        this.timeRepository = timeRepository;
     }
 
     public Optional<TicketsByOrderResponse> getTicketsByOrder(Integer id) {
@@ -47,6 +50,51 @@ public class OrderService {
             return Optional.of(new TicketsByOrderResponse(ordersRepository.getStatusNameById(id), tickets));
         }
         return Optional.empty();
+    }
+
+    @Transactional
+    public Optional<TicketsResponse[]> getTickets() {
+        try {
+            List<TypeEntity> typesList = typesRepository.findAll();
+
+            if (typesList.isEmpty()) {
+                return Optional.empty();
+            }
+
+            TicketsResponse[] ticketsResponses = typesList.stream()
+                    .map(type -> {
+                        TicketsResponse ticketsResponse = new TicketsResponse();
+                        ticketsResponse.setType(type.getName());
+                        ticketsResponse.setDescription(type.getDescription());
+
+                        List<TicketEntity> ticketEntities = ticketsRepository.getTicketEntitiesByTypeId(type.getTypeId());
+
+                        if (!ticketEntities.isEmpty()) {
+                            List<Ticket> ticketsList = ticketEntities.stream()
+                                    .map(ticketEntity -> {
+                                        TimeEntity timeEntity = timeRepository.getTimeEntityByTimeId(ticketEntity.getTimeId());
+                                        return new Ticket(
+                                                ticketEntity.getTicketId(),
+                                                ticketEntity.getName(),
+                                                ticketEntity.getPrice(),
+                                                timeEntity != null ? timeEntity.getMinutes() : null
+                                        );
+                                    })
+                                    .toList();
+
+                            Ticket[] ticketsArray = ticketsList.toArray(new Ticket[0]);
+                            ticketsResponse.setTickets(ticketsArray);
+                        }
+
+                        return ticketsResponse;
+                    })
+                    .toArray(TicketsResponse[]::new);
+
+            return Optional.of(ticketsResponses);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return Optional.empty();
+        }
     }
 
     @Transactional

@@ -77,6 +77,7 @@ public class AuthenticationController {
                 return new ResponseEntity<>(new AppError(HttpStatus.UNAUTHORIZED.value(), "Ошибка аутентификации"), HttpStatus.UNAUTHORIZED);
             }
         } catch (AuthenticationException e) {
+            e.printStackTrace();
             return new ResponseEntity<>(new AppError(HttpStatus.UNAUTHORIZED.value(), "Ошибка аутентификации"), HttpStatus.UNAUTHORIZED);
         }
     }

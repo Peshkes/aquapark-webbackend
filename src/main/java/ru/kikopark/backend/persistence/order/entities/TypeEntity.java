@@ -10,6 +10,7 @@ public class TypeEntity {
     @Column(name = "type_id")
     Integer typeId;
     String name;
+    String description;
 
     public Integer getTypeId() {
         return typeId;
@@ -17,5 +18,9 @@ public class TypeEntity {
 
     public String getName() {
         return name;
+    }
+
+    public String getDescription() {
+        return description;
     }
 }

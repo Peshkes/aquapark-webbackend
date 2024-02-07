@@ -7,6 +7,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import ru.kikopark.backend.model.order.TicketsByOrderResponse;
+import ru.kikopark.backend.model.order.TicketsResponse;
 import ru.kikopark.backend.persistence.order.entities.OrderEntity;
 import ru.kikopark.backend.service.OrderService;
 
@@ -40,6 +41,13 @@ public class OrderController {
             httpStatus = HttpStatus.OK;
         }
         return new ResponseEntity<>(orderId, httpStatus);
+    }
+
+    @GetMapping("/guest/tickets")
+    public ResponseEntity<TicketsResponse[]> getTickets() {
+        return orderService.getTickets()
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
     }
 
     @PutMapping("/admin/update-order-status")
