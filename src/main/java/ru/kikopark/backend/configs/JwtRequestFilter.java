@@ -5,29 +5,24 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.AllArgsConstructor;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
-import ru.kikopark.backend.service.AuthenticationService;
+import ru.kikopark.backend.modules.authentication.service.AuthenticationService;
 import ru.kikopark.backend.utils.JwtService;
 
 import java.io.IOException;
 import java.util.List;
 import java.util.stream.Collectors;
-
+@AllArgsConstructor
 @Component
 public class JwtRequestFilter extends OncePerRequestFilter {
-    private final JwtService jwtService;
-    private final AuthenticationService authenticationService;
-    @Autowired
-    public JwtRequestFilter(JwtService jwtService, AuthenticationService authenticationService) {
-        this.jwtService = jwtService;
-        this.authenticationService = authenticationService;
-    }
+    private JwtService jwtService;
+    private AuthenticationService authenticationService;
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
@@ -37,12 +32,11 @@ public class JwtRequestFilter extends OncePerRequestFilter {
         if (authHeader != null && authHeader.startsWith("Bearer ")) {
             jwt = authHeader.substring(7);
             try {
-                username = jwtService.getUsername(jwt);username = jwtService.getUsername(jwt);
+                username = jwtService.getUsername(jwt);
 
                 List<String> roles = jwtService.getRoles(jwt);
 
             } catch (ExpiredJwtException e) {
-
                 // Если access token истек, пробуем обновить его с помощью refresh token
                 String refreshToken = request.getHeader("Refresh-Token");
                 username = jwtService.getUsername(refreshToken);
@@ -55,9 +49,11 @@ public class JwtRequestFilter extends OncePerRequestFilter {
                         newAccessToken = jwtService.generateAccessToken(userDetails);
                         response.setHeader("Authorization", newAccessToken);
                     } catch (Exception exception) {
+                        System.err.println("Error generating JWT token by refresh: " + e.getMessage());
                     }
                 }
             } catch (Exception e) {
+                System.err.println("Error parsing JWT token: " + e.getMessage());
             }
         }
         if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {

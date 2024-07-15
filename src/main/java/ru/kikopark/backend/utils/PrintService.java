@@ -10,46 +10,50 @@ import org.apache.pdfbox.pdmodel.PDPageContentStream;
 import org.apache.pdfbox.pdmodel.graphics.image.LosslessFactory;
 import org.apache.pdfbox.pdmodel.graphics.image.PDImageXObject;
 import org.apache.pdfbox.util.Matrix;
-import org.apache.tomcat.util.http.fileupload.ByteArrayOutputStream;
+import org.springframework.core.io.ClassPathResource;
+import org.springframework.stereotype.Service;
 
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
-import java.io.ByteArrayInputStream;
-import java.io.File;
-import java.io.IOException;
+import java.io.*;
 
+@Service
 public class PrintService {
 
-    public static void createTicket(String data) throws Exception {
+    public byte[] createTicket(String data) throws Exception {
+
         BufferedImage qrCodeImage = generateQRCodeImage(data);
-        PDDocument document = PDDocument.load(new File("src/main/java/ru/kikopark/backend/utils/ticket.pdf"));
-        PDPage page = document.getPage(0);
-        PDPageContentStream contentStream = new PDPageContentStream(document, page, PDPageContentStream.AppendMode.APPEND, true);
-        insertQrCode(document, contentStream, qrCodeImage, 130, 182, 245, 245);
-        contentStream.close();
-        document.save("src/main/java/ru/kikopark/backend/utils/output_document" + data + ".pdf");
-        document.close();
+        ClassPathResource resource = new ClassPathResource("ticket.pdf");
+
+        try (InputStream inputStream = resource.getInputStream();
+             PDDocument document = PDDocument.load(inputStream);
+             ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
+
+
+            PDPage page = document.getPage(0);
+            try (PDPageContentStream contentStream = new PDPageContentStream(document, page, PDPageContentStream.AppendMode.APPEND, true)) {
+                insertQrCode(document, contentStream, qrCodeImage, 130, 182, 245, 245);
+            }
+            document.save(baos);
+            return baos.toByteArray();
+        }
     }
 
-    private static BufferedImage generateQRCodeImage(String barcodeText) throws Exception {
+    private BufferedImage generateQRCodeImage(String barcodeText) throws Exception {
         QRCodeWriter barcodeWriter = new QRCodeWriter();
         BitMatrix bitMatrix = barcodeWriter.encode(barcodeText, BarcodeFormat.QR_CODE, 200, 200);
         return MatrixToImageWriter.toBufferedImage(bitMatrix);
     }
 
-    private static void insertQrCode(PDDocument document, PDPageContentStream contentStream, BufferedImage qrCodeImage,
-                                     float x, float y, float width, float height) throws IOException {
-        // Преобразование BufferedImage в PDImageXObject
+    private void insertQrCode(PDDocument document, PDPageContentStream contentStream, BufferedImage qrCodeImage,
+                              float x, float y, float width, float height) throws IOException {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         ImageIO.write(qrCodeImage, "png", baos);
         ByteArrayInputStream bais = new ByteArrayInputStream(baos.toByteArray());
         PDImageXObject pdImage = LosslessFactory.createFromImage(document, ImageIO.read(bais));
 
-        // Настройка матрицы преобразования для вставки изображения
         Matrix matrix = new Matrix(width / qrCodeImage.getWidth(), 0, 0, height / qrCodeImage.getHeight(), x, y);
         contentStream.transform(matrix);
-
-        // Вставка изображения в PDF
         contentStream.drawImage(pdImage, 0, 0);
     }
 }
